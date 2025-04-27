@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://172.19.50.120:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_LISTENER_PORT: 9092
+      KAFKA_LISTENER_NAME: PLAINTEXT
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    depends_on:
+      - zookeeper
+
+  hadoop:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop2.7.4-java8
+    container_name: hadoop
+    ports:
+      - "50070:50070" # HDFS UI
+      - "8020:8020"
+    environment:
+      - CLUSTER_NAME=test
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+
+  hive-metastore:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-metastore
+    environment:
+      - HIVE_METASTORE_DB_TYPE=postgres
+      - HIVE_METASTORE_HOST=hive-metastore
+    ports:
+      - "9083:9083"
+    depends_on:
+      - hadoop
+
+  hive-server:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-server
+    environment:
+      - HIVE_METASTORE_URI=thrift://hive-metastore:9083
+    ports:
+      - "10000:10000" # HiveServer2 Thrift port
+    depends_on:
+      - hive-metastore
+
+  spark-master:
+    image: bde2020/spark-master:2.4.0-hadoop2.7
+    container_name: spark-master
+    ports:
+      - "7077:7077"
+      - "8080:8080" # Spark UI
+    environment:
+      - INIT_DAEMON_STEP=setup_spark
+    depends_on:
+      - hadoop
+
+  spark-worker:
+    image: bde2020/spark-worker:2.4.0-hadoop2.7
+    container_name: spark-worker
+    ports:
+      - "8081:8081"
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    depends_on:
+      - spark-master
+
+  hbase:
+    image: harisekhon/hbase
+    container_name: hbase
+    ports:
+      - "16010:16010" # HBase UI
+      - "9090:9090"
+    environment:
+      - HBASE_MANAGES_ZK=false
+    depends_on:
+      - zookeeper
+
+volumes:
+  hadoop_namenode:
+
