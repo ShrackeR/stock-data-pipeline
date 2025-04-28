@@ -3,8 +3,8 @@ import websocket
 import threading
 from kafka import KafkaProducer
 
-ALPACA_API_KEY = "PK515XOV4WEW0NV1SIDJ"
-ALPACA_SECRET_KEY = "09qDxGCUdtXOtjYgV1uglO5W6vkuf6UMLhMMeGpu"
+ALPACA_API_KEY = ""
+ALPACA_SECRET_KEY = ""
 
 ALPACA_STREAM_URL = "wss://stream.data.alpaca.markets/v2/test"
 
